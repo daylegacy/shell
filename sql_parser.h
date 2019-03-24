@@ -4,25 +4,22 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstdio>
+#include <memory>
 #define	TOKEN_SIZE (50)
 #define ARRAY_SIZE (20)
 
 class parser {
-	char **tokens;
+	vector<char *>tokens;
 	char cur_token[TOKEN_SIZE+1];
-	int token_n = 0;
-	int tokens_size = 0;
 	int smb_n = 0;
 public:
 	parser(){;}
-	explicit parser(char ** array, int size) {
+	explicit parser(vector<char *> array) {
 		tokens = array;
-		tokens_size = size;
 		nullify_token();
 		nullify_tokens();
 	}
 	int split_to_tokens(FILE * input, int*res) {
-		this->token_n = 0;
 		this->smb_n = 0;
 		int k=0;
 		int literal=0;
@@ -100,17 +97,14 @@ public:
 			if(cmd_end==2){ 
 				add_token();
 				*res=0;
-				return token_n;
+				return tokens.getsize();
 			}
 			if(cmd_end==1){ 
 				add_token();
 				ungetc(next_smb, input);
 				*res=1;
-				return token_n;
+				return tokens.getsize();
 			}
-
-
-
 			
 			if(!jmp){
 				prev_smb = smb;
@@ -131,16 +125,15 @@ public:
 		//ungetc(next_smb, input);
 		//printf("LLLL\n");
 		
-		return token_n;
+		return tokens.getsize();
 	}
 	
 	void add_token() {
-		assert(token_n < ARRAY_SIZE);
 		if (cur_token && cur_token[0]!=0) {
 			assert(cur_token);
-			//assert(tokens[token_n]);
-			strcpy(tokens[token_n], cur_token);
-			token_n++;
+			char * new_token = (char *)malloc(sizeof(char)*(strlen(cur_token)+1));
+			strcpy(new_token, cur_token);
+			tokens
 			nullify_token();
 		}
 	}

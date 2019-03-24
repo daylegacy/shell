@@ -3,37 +3,21 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include "vector.h"
 #define COMMANDS_SIZE 10
 
 
 struct cmd{
-    char ** argv;
+    vector<char *> argv;
     int argc;
 };
 
 struct shell{
-    cmd * commands;
+    vector<cmd> commands;
     int commands_n;
 
-    shell(){
-        commands = (cmd *)malloc(sizeof(cmd)*COMMANDS_SIZE);
-        for(int i=0; i<COMMANDS_SIZE; i++){
-            commands[i].argv = (char **)malloc(sizeof(char*)*ARRAY_SIZE);
-            for(int k=0; k<ARRAY_SIZE; k++){
-                commands[i].argv[k] = (char *)malloc((TOKEN_SIZE + 1) * sizeof(char));
-            }
-        }
-    }
-    ~shell(){
-        
-        for(int i=0; i<COMMANDS_SIZE; i++){
-            for(int k=0; k<ARRAY_SIZE; k++){
-                free(commands[i].argv[k]);
-            }
-            free(commands[i].argv);
-        }
-        free(commands);
-    }
+    shell(){}
+    ~shell(){}
 
     void run(){
         while(1){
