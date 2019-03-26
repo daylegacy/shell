@@ -132,7 +132,7 @@ struct shell{
                 }
             }
             if(n_of_finished==pids.getsize()) break;
-            usleep(100000);
+            usleep(1000000);
         }
         
 
