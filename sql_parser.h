@@ -5,22 +5,25 @@
 #include <cassert>
 #include <cstdio>
 #include <memory>
+#include "vector.h"
 #define	TOKEN_SIZE (50)
 #define ARRAY_SIZE (20)
 
 class parser {
-	vector<char *>tokens;
-	char cur_token[TOKEN_SIZE+1];
-	int smb_n = 0;
+	vector<char*> tokens;
+	vector<char> cur_token;
 public:
-	parser(){;}
-	explicit parser(vector<char *> array) {
-		tokens = array;
+	parser(){
+		vector<char*> tokens;
+		vector<char> cur_token;
+	}
+	~parser(){}
+	explicit parser(vector<char *>* array) {
+		tokens = *array;
 		nullify_token();
 		nullify_tokens();
 	}
-	int split_to_tokens(FILE * input, int*res) {
-		this->smb_n = 0;
+	vector<char*> &split_to_tokens(FILE * input, int*res) {
 		int k=0;
 		int literal=0;
 		int smb=0;
@@ -55,7 +58,8 @@ public:
 						add_token(); cmd_end=2; //end of command
 					}
 					break;
-				case ' ':	
+				case ' ':
+					
 					if(prev_smb!='\\'){
 						add_token();
 					}
@@ -97,13 +101,13 @@ public:
 			if(cmd_end==2){ 
 				add_token();
 				*res=0;
-				return tokens.getsize();
+				return tokens;
 			}
 			if(cmd_end==1){ 
 				add_token();
 				ungetc(next_smb, input);
 				*res=1;
-				return tokens.getsize();
+				return tokens;
 			}
 			
 			if(!jmp){
@@ -123,35 +127,27 @@ public:
 		}
 		add_token();
 		//ungetc(next_smb, input);
-		//printf("LLLL\n");
 		
-		return tokens.getsize();
+		return tokens;
 	}
 	
 	void add_token() {
-		if (cur_token && cur_token[0]!=0) {
-			assert(cur_token);
-			char * new_token = (char *)malloc(sizeof(char)*(strlen(cur_token)+1));
-			strcpy(new_token, cur_token);
-			tokens
-			nullify_token();
+		cur_token.push_back('\0');
+		if (cur_token.gp() && cur_token[0]!=0) {
+			char * new_token = (char *)malloc(sizeof(char)*(strlen(cur_token.gp())+1));
+			strcpy(new_token, cur_token.gp());
+			tokens.push_back((new_token));
 		}
+		nullify_token();
 	}
 	void add_smb(int c) {
 		if(c==0)return;
-		assert(smb_n < TOKEN_SIZE);
-		cur_token[smb_n] = c;
-		smb_n++;
+		cur_token.push_back(c);
 	}
 	void nullify_token() {
-		memset((void *)cur_token, 0, (TOKEN_SIZE + 1) * sizeof(char));
-		smb_n = 0;
+		cur_token.setsize(0);
 	}
-	void nullify_tokens() {
-		for(int i =0;i<tokens_size;i++){
-			memset((void *)tokens[i], 0, (TOKEN_SIZE + 1) * sizeof(char));
-		}
-	}
+	void nullify_tokens() {}
 
 };
 

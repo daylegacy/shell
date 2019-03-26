@@ -1,67 +1,106 @@
+#ifndef VECTOR_H
+#define VECTOR_H
+
 #define VEC_REALLOC 10
 #define BIG_ENOUGH 200
 #define MULTIPLIER 1.5
 #include <cstdlib>
 
 template <typename T>
-struct vector{
+struct vector {
 private:
-    T * ptr;
-    int size;
-    int capacity;
+    T * ptr = nullptr;
+    int size = 0;
+    int capacity = 0;
 public:
-    //vector(int sz=0, int cp=0)
-    //    :ptr(new T[cp]), size(sz), capacity(cp)
-    //{}
-    vector(int sz=0)
-        :ptr((T *)malloc(sz*sizeof(T))), size(sz), capacity(sz)
-    {}
+    vector(){}
     vector(int sz, int cp)
-        :ptr((T *)malloc(cp*sizeof(T))), size(sz), capacity(cp)
-    {}
-    void push_back(T a){
-        if(size<capacity){
-            ptr[size++]=a;
-        }
-        else{
-            reallocate();
-            ptr[size++]=a;
-        }
+        :ptr(new T[cp]), size(sz), capacity(cp)
+    {
+        memset(ptr, 0, capacity*sizeof(T));
     }
-    // void reallocate(int n=0){
-    //     int delta = is_big_enough()? capacity*MULTIPLIER:VEC_REALLOC;
-    //     int new_capacity = capacity+(n>delta?n:delta);
-
-    //     T* new_ptr = new T[new_capacity];
-    //     for(int i=0;i<size;i++){
-    //         new_ptr[i] = ptr[i];
-    //     }
-    //     delete [] ptr;
-    //     ptr = new_ptr;
-    //     capacity = new_capacity;
-    // }
+    vector(const vector<T> & other)
+        :vector(other.size, other.capacity)   
+    {
+        //printf("COPY cons\n");
+        memcpy(ptr, other.ptr, size * sizeof(T));
+    }
+    vector(vector<T> && other)
+        :ptr(other.ptr), size(other.size), capacity(other.capacity)
+    {
+        //printf("MOVE cons\n");
+        other.ptr = nullptr;
+        other.size = 0;
+        other.capacity = 0;
+    }
+    void push_back(T a){
+        //printf("PUsh back>\n");
+        if(size>=capacity){
+            reallocate();
+        }
+        ptr[size++]=a;
+        //printf("PUsh back<\n");
+    }
+    void pop(){
+        if(size) size--;
+    }
     void reallocate(int n=0){
         int delta = is_big_enough()? capacity*MULTIPLIER:VEC_REALLOC;
-        int new_capacity = capacity+(n>delta?n:delta);
+        delta = n>delta?n:delta;
+        int new_capacity = capacity+delta;
         
-        ptr = (T *)realloc(ptr, new_capacity*sizeof(T));
+        auto new_ptr = new T[new_capacity];
+        memcpy(new_ptr, ptr, capacity*sizeof(T));
+
+        //ptr = (T *)realloc(ptr, new_capacity*sizeof(T));
+        memset(new_ptr+capacity, 0, delta*sizeof(T));
         capacity = new_capacity;
+        ptr = new_ptr;
     }
-    T operator[](int i){
+    T& operator[](int i) const{
         return *(ptr+i);
     }
-    int is_big_enough(){
+
+    vector<T> & operator=(const vector<T> & other){
+        if(&other != this){
+            delete [] ptr;
+            capacity = other.capacity;
+            size = other.size;
+            ptr = new T[capacity];
+            memcpy(ptr, other.ptr, size * sizeof(T));
+        }
+        return *this;
+    }
+    vector<T> & operator=(const vector<T> && other){
+        if(&other != this){
+            ptr = other.ptr;
+            other.ptr = nullptr;
+            size = other.size;
+            other.size = 0;
+            capacity = other.capacity;
+            other.capacity = 0;
+        }
+        return *this;
+    }
+    int is_big_enough() const{
         return capacity>BIG_ENOUGH?1:0;
     }
-    int getsize(){
+    int getsize() const {
         return size;
     }
-    T* getptr(){
+
+    void setsize(int size){
+        this->size = size;
+    }
+    T* gp() const{
         return ptr;
     }
+    void release(){delete [] ptr; size = capacity = 0;}
     ~vector(){
-        printf("his size and capacity were %d, %d\n", size, capacity);
-        free(ptr);
+        //printf("its size and capacity were %d, %d\n", size, capacity);
+        delete [] ptr;
     }
 
 };
+
+#endif
