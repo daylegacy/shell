@@ -1,5 +1,0 @@
- !!!!!!!CHILD: PID -- 1812
-CHILD:: pwd
-name = pwd, argc = 1
-	argv[0] = pwd
-/mnt/f/YandexDisk/Progs/technosphere/shell
