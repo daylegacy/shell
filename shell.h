@@ -47,9 +47,6 @@ struct shell{
     int execute(vector<cmd>& commands){
         pid_t pid;
         pid_t cur_pid;
-        pid_t prev_pid=-1;
-        int status=-678;
-        int rv;
         
         vector<int *> pipes;
         vector<pid_t> pids;
@@ -64,7 +61,6 @@ struct shell{
         int last = commands.getsize()-1;
         for(int i=0; i<commands.getsize();i++){
             cur_pid = getpid();
-            status=-678;
             if(cur_pid==shell_pid){
                 printf(" i= %d\n", i);
                 switch(pid=fork()) {
@@ -80,7 +76,7 @@ struct shell{
                                 // close(pipes[i][0]);
                             }
                             if(i==last){
-                                dup2(pipes[i-1][0], STDIN_FILENO);//stdin->pipes[i][1]
+                                dup2(pipes[i-1][0], STDIN_FILENO);//stdin->pipes[i-1][0]
                                 //close(pipes[i-1][1]);
                             }
                         }
@@ -113,39 +109,37 @@ struct shell{
                 default: //shell
                     pids.push_back(pid);
                     printf("SHELL: PID -- %d PID child %d\n", getpid(),pid);
-                    //printf("SHELL: waiting for = %d(%s)\n", pid, commands[i][0]);
-                    // waitpid(pid, &status, WNOHANG );
-                    // printf("SHELL: PID -- %d PID child %d status = %d childs rv:%d\n", getpid(),pid, status, WEXITSTATUS(status));
                 }
             }
         }
-        // while(1){// check if all forks exited
-        //     int n_of_finished=0;
-        //     for(int i =0;i<pids.getsize();i++){
-        //         if(pids[i]==0) {n_of_finished++;continue;}
-        //         auto cur_pid=getpid();
-        //         if(cur_pid = shell_pid){
-        //             int status=-5;
-        //             printf("SHELL: waiting for %d(%s)\n",pids[i], commands[i][0]);
-        //             pid_t return_pid = waitpid(pids[i], &status, WNOHANG); 
-        //             if (return_pid == -1) {
-        //                 printf("ERROR child%d(%s)", pids[i], commands[i][0]);
-        //             } else if (return_pid == 0) {
-        //                 printf("child%d(%s) still running\n",pids[i], commands[i][0]);
-        //             } else if (return_pid == pids[i]) {
-        //                 printf("SHELL: child%d(%s) fineshed status = %d childs rv:%d\n", pids[i], commands[i][0], status, WEXITSTATUS(status));
-        //                 pids[i] =0;
-        //             }
-        //         }
-        //     }
-        //     if(n_of_finished==pids.getsize()) break;
-        //     usleep(1000000);
-        // }
+        while(1){// check if all forks exited
+            int n_of_finished=0;
+            for(int i =0;i<pids.getsize();i++){
+                if(pids[i]==0) {n_of_finished++;continue;}
+                auto cur_pid=getpid();
+                if(cur_pid == shell_pid){
+                    int status=-5;
+                    printf("SHELL: waiting for %d(%s)\n",pids[i], commands[i][0]);
+                    pid_t return_pid = waitpid(pids[i], &status, WNOHANG); 
+                    if (return_pid == -1) {
+                        printf("ERROR child%d(%s)", pids[i], commands[i][0]);
+                    } else if (return_pid == 0) {
+                        printf("child%d(%s) still running\n",pids[i], commands[i][0]);
+                    } else if (return_pid == pids[i]) {
+                        printf("SHELL: child%d(%s) finished status = %d childs rv:%d\n", pids[i], commands[i][0], status, WEXITSTATUS(status));
+                        pids[i] =0;
+                    }
+                }
+            }
+            if(n_of_finished==pids.getsize()) break;
+            usleep(1000000);
+        }
         
 
         for(int i =0; i< commands.getsize()-1;i++){
             delete [] pipes[i];
         }
+        return 0;
     }
 
     int parse_input(vector<cmd>& commands){
