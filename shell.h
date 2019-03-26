@@ -48,8 +48,8 @@ struct shell{
         pid_t pid;
         pid_t cur_pid;
         
-        vector<int *> pipes;
-        vector<pid_t> pids;
+        vector<int *> pipes; //pipes for forks
+        vector<pid_t> pids;// pids for forks
         for(int i =0; i< commands.getsize()-1;i++){
             auto pipefd = new int[2];
             pipe(pipefd);
@@ -132,7 +132,7 @@ struct shell{
                 }
             }
             if(n_of_finished==pids.getsize()) break;
-            usleep(1000000);
+            usleep(100000);
         }
         
 
