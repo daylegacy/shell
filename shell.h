@@ -5,8 +5,16 @@
 #include <sys/wait.h>
 #include "vector.h"
 #define COMMANDS_SIZE 10
-
-
+#ifdef DEBUG
+#define printD(...) \
+	do{ \
+		printf(__VA_ARGS__); \
+	}while(0); 
+#else
+#define printD(...) \
+	do{ \
+	}while(0); 
+#endif
 struct cmd{
     vector<char *> argv;
     cmd(vector<char *> argv){
@@ -47,68 +55,72 @@ struct shell{
     int execute(vector<cmd>& commands){
         pid_t pid;
         pid_t cur_pid;
-        
-        vector<int *> pipes; //pipes for forks
+        int pipe_out[2];
+        int pipe_in[2];
         vector<pid_t> pids;// pids for forks
-        for(int i =0; i< commands.getsize()-1;i++){
-            auto pipefd = new int[2];
-            pipe(pipefd);
-            pipes.push_back(pipefd);
-        }
-        int pipes_n=commands.getsize()-1;
         auto shell_pid = getpid();
-        printf("shell -- %d\n", shell_pid);
+        printD("shell -- %d\n", shell_pid);
         int last = commands.getsize()-1;
         for(int i=0; i<commands.getsize();i++){
             cur_pid = getpid();
             if(cur_pid==shell_pid){
-                printf(" i= %d\n", i);
+                printD(" i= %d\n", i);
+                if(commands.getsize()!=1){ //initialising pipes
+                    if(i==last || i==0){
+                        if(i==0){
+                            pipe(pipe_out);
+                        }
+                        if(i==last){
+                            pipe_in[0] = pipe_out[0];
+                            pipe_in[1] = pipe_out[1];
+                        }
+                    }
+                    else{
+                        pipe_in[0] = pipe_out[0];
+                        pipe_in[1] = pipe_out[1];
+                        pipe(pipe_out);
+                    }
+                }
+                
                 switch(pid=fork()) {
                 case -1:
                     perror("fork"); 
                     exit(1); 
                 case 0: //fork process
-                    if(pipes_n){
-                        if(i==0 || i==last){
-                            if(i==0){
-                                dup2(pipes[i][1], STDOUT_FILENO);//stdout->pipes[i][1]
-                                //close(pipes[i][0]);//close unused read end for first
-                                // close(pipes[i][0]);
-                            }
-                            if(i==last){
-                                dup2(pipes[i-1][0], STDIN_FILENO);//stdin->pipes[i-1][0]
-                                //close(pipes[i-1][1]);
-                            }
+                    if(commands.getsize()!=1){
+						if(i==0){
+							close(pipe_out[0]);
+                            dup2(pipe_out[1], STDOUT_FILENO);
+						}
+                        else if(i==last){
+							close(pipe_in[1]);
+							dup2(pipe_in[0], STDIN_FILENO);
                         }
                         else{
-                            dup2(pipes[i][1], STDOUT_FILENO);
-                            dup2(pipes[i-1][0], STDIN_FILENO);
-                            //close(pipes[i][0]);
-                            //close(pipes[i-1][1]);
+                            close(pipe_in[1]);
+                            close(pipe_out[0]);
+                            dup2(pipe_in[0], STDIN_FILENO);
+                            dup2(pipe_out[1], STDOUT_FILENO);
                         }
                     }
                     commands[i].push_back(NULL);
                     execvp(commands[i][0], commands[i].gp());
-
-                    if(pipes_n){// if commands[i][0] didnt exited
-                        if(i==0 || i==last){
-                            if(i==0){
-                                close(pipes[i][0]);//close write end for first
-                            }
-                            if(i==last){
-                                close(pipes[i-1][0]); //close read end for last
-                            }
-                        }
-                        else{
-                            close(pipes[i][1]);//close write end
-                            close(pipes[i-1][0]);//close read end
-                        }
-                    }
-                    
-                    exit(0);
+                    exit(-100);
                 default: //shell
                     pids.push_back(pid);
-                    printf("SHELL: PID -- %d PID child %d\n", getpid(),pid);
+                    printD("SHELL: PID -- %d PID child %d\n", getpid(),pid);
+                }
+				if(commands.getsize()!=1){ //close all descriptors after process finished
+					if(i==0){
+						close(pipe_out[1]);
+					}
+					else if(i==last){
+						close(pipe_in[0]);
+					}
+					else{
+						close(pipe_out[1]);
+						close(pipe_in[0]);
+					}
                 }
             }
         }
@@ -119,25 +131,20 @@ struct shell{
                 auto cur_pid=getpid();
                 if(cur_pid == shell_pid){
                     int status=-5;
-                    printf("SHELL: waiting for %d(%s)\n",pids[i], commands[i][0]);
+                    printD("SHELL: waiting for %d(%s)\n",pids[i], commands[i][0]);
                     pid_t return_pid = waitpid(pids[i], &status, WNOHANG); 
                     if (return_pid == -1) {
-                        printf("ERROR child%d(%s)", pids[i], commands[i][0]);
+                        printD("ERROR child%d(%s)", pids[i], commands[i][0]);
                     } else if (return_pid == 0) {
-                        printf("child%d(%s) still running\n",pids[i], commands[i][0]);
+                        printD("child%d(%s) still running\n",pids[i], commands[i][0]);
                     } else if (return_pid == pids[i]) {
-                        printf("SHELL: child%d(%s) finished status = %d childs rv:%d\n", pids[i], commands[i][0], status, WEXITSTATUS(status));
+                        printD("SHELL: child%d(%s) finished status = %d childs rv:%d\n", pids[i], commands[i][0], status, WEXITSTATUS(status));
                         pids[i] =0;
                     }
                 }
             }
             if(n_of_finished==pids.getsize()) break;
-            usleep(1000000);
-        }
-        
-
-        for(int i =0; i< commands.getsize()-1;i++){
-            delete [] pipes[i];
+            usleep(30000);
         }
         return 0;
     }
@@ -155,19 +162,19 @@ struct shell{
         return cur_command+1;
     }
     void print_commands(vector<cmd>& commands){
-        printf("print commands: \n");
+        printD("print commands: \n");
         for(int i=0; i<commands.getsize(); i++){
-            printf("com%d: ", i);
+            printD("com%d: ", i);
             for(int k=0; k<commands[i].getsize(); k++){
-                printf("\"%s\" ", commands[i][k]);
+                printD("\"%s\" ", commands[i][k]);
             }
-            printf("\n");
+            printD("\n");
         }
     }
     void print_command(vector<char *> &command){
-        printf("name = %s, argc = %d\n", command[0], command.getsize());
+        printD("name = %s, argc = %d\n", command[0], command.getsize());
         for(int i=0;i<command.getsize();i++){
-            printf("\targv[%d] = %s\n", i, command[i]);
+            printD("\targv[%d] = %s\n", i, command[i]);
         }
     }
     void clear_stdin(){
