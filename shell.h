@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "vector.h"
 #define COMMANDS_SIZE 10
 #ifdef DEBUG
@@ -32,7 +34,8 @@ struct shell{
             printf(">");
             parse_input(commands);
             print_commands(commands);
-            if(commands.getsize()>0 && !strcmp(commands[0][0], "quit")){
+            if(commands.getsize()>0 && 
+                !strcmp(commands[0][0], "quit")){
                 for(int i = 0; i<commands.getsize(); i++){
                     for(int k =0;k<commands[i].getsize();k++){
                         free(commands[i][k]);
@@ -63,6 +66,7 @@ struct shell{
         int last = commands.getsize()-1;
         for(int i=0; i<commands.getsize();i++){
             cur_pid = getpid();
+            int fd=0;
             if(cur_pid==shell_pid){
                 printD(" i= %d\n", i);
                 if(commands.getsize()!=1){ //initialising pipes
@@ -103,12 +107,34 @@ struct shell{
                             dup2(pipe_out[1], STDOUT_FILENO);
                         }
                     }
-                    commands[i].push_back(NULL);
+                    if(commands[i].getsize()>2){
+                        if(strcmp(commands[i][commands[i].getsize()-2], ">")==0){
+                            printD("%s: detected > \n", commands[i][0]);
+                            fd = open(commands[i][commands[i].getsize()-1], O_WRONLY|O_CREAT|O_TRUNC);
+                            dup2(fd, STDOUT_FILENO);
+                            commands[i][commands[i].getsize()-2]=NULL;
+                        }
+                        else if(strcmp(commands[i][commands[i].getsize()-2], ">>")==0){
+                            printD("%s: detected >> \n", commands[i][0]);
+                            fd = open(commands[i][commands[i].getsize()-1], O_WRONLY|O_APPEND|O_CREAT);
+                            dup2(fd, STDOUT_FILENO);
+                            commands[i][commands[i].getsize()-2]=NULL;
+                        }
+                        else{
+                            commands[i].push_back(NULL);
+                        }
+                    }
+                    else{
+                        commands[i].push_back(NULL);
+                    }
                     execvp(commands[i][0], commands[i].gp());
                     exit(-100);
                 default: //shell
                     pids.push_back(pid);
                     printD("SHELL: PID -- %d PID child %d\n", getpid(),pid);
+                }
+                if(fd){
+                    close(fd);
                 }
 				if(commands.getsize()!=1){ //close all descriptors after process finished
 					if(i==0){
@@ -162,7 +188,7 @@ struct shell{
         return cur_command+1;
     }
     void print_commands(vector<cmd>& commands){
-        printD("print commands: \n");
+        printD("print commands s=%d: \n", commands.getsize());
         for(int i=0; i<commands.getsize(); i++){
             printD("com%d: ", i);
             for(int k=0; k<commands[i].getsize(); k++){

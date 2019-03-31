@@ -59,7 +59,6 @@ public:
 					}
 					break;
 				case ' ':
-					
 					if(prev_smb!='\\'){
 						add_token();
 					}
