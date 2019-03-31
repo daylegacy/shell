@@ -11,11 +11,10 @@
 
 class parser {
 	vector<char*> tokens;
+	vector<char*> modifiers;
 	vector<char> cur_token;
 public:
 	parser(){
-		vector<char*> tokens;
-		vector<char> cur_token;
 	}
 	~parser(){}
 	explicit parser(vector<char *>* array) {
@@ -23,7 +22,8 @@ public:
 		nullify_token();
 		nullify_tokens();
 	}
-	vector<char*> &split_to_tokens(FILE * input, int*res) {
+	vector<char*> &split_to_tokens(FILE * input, int*res, vector<vector<const char*>> & modifiers) {
+		vector<const char*> mod;
 		int k=0;
 		int literal=0;
 		int smb=0;
@@ -66,14 +66,27 @@ public:
 						add_smb(smb);
 					}
 					break;
-				case '&':	add_token(); add_smb('&');
-					if (next_smb == '&')		{ add_smb('&');jmp=1;}
-					add_token(); break;
-				case '|':	add_token();
-					if (next_smb == '|'){
-						add_smb('|');add_smb('|');add_token();jmp=1;
+				// case '&':	add_token(); add_smb('&');
+				// 	if (next_smb == '&')		{ add_smb('&');jmp=1;}
+				// 	add_token(); break;
+				case '&':	add_token();
+					if (next_smb == '&'){
+						mod.push_back("&&");
+						cmd_end=1;
 					}
 					else{
+						mod.push_back("&");
+						cmd_end=1;
+					}
+					break;	
+				case '|':	add_token();
+					if (next_smb == '|'){
+						cmd_end=1;
+						mod.push_back("||");
+						//add_smb('|');add_smb('|');add_token();jmp=1;
+					}
+					else{
+						mod.push_back("|");
 						cmd_end=1;
 					}
 					break;
@@ -100,12 +113,15 @@ public:
 			if(cmd_end==2){ 
 				add_token();
 				*res=0;
+				
+				modifiers.push_back(mod);
 				return tokens;
 			}
 			if(cmd_end==1){ 
 				add_token();
 				ungetc(next_smb, input);
 				*res=1;
+				modifiers.push_back(mod);		
 				return tokens;
 			}
 			
@@ -126,7 +142,7 @@ public:
 		}
 		add_token();
 		//ungetc(next_smb, input);
-		
+		modifiers.push_back(mod);
 		return tokens;
 	}
 	
