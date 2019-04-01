@@ -50,7 +50,7 @@ public:
 			if(literal1){
 				switch (smb)
 				{
-				case '\n': is_protected=0;
+				case '\n': add_smb(smb);is_protected=0;
 					break;
 				case '\"':
 					if(!is_protected){
@@ -185,7 +185,7 @@ public:
 			}
 			if(cmd_end==1){ 
 				add_token();
-				//ungetc(next_smb, input);
+				ungetc(next_smb, input);
 				*res=1;
 				modifiers.push_back(mod);		
 				return tokens;
