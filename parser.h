@@ -35,13 +35,16 @@ public:
 		int jmp=0;
 		int is_protected=0;
 		while (!(smb=='\n' && !is_protected && !literal1 && !literal2)) {
-			next_smb=getchar();
 			if(next_smb==EOF) {
 				add_token();
+				//ungetc('\n', input);
 				*res=-1;
+				//printf("EOF\n");
 				modifiers.push_back(mod);
 				return tokens;
 			}
+			next_smb=getchar();
+			
 
 			assert(!(literal1 && literal2));
 			if(literal1){
@@ -182,7 +185,7 @@ public:
 			}
 			if(cmd_end==1){ 
 				add_token();
-				ungetc(next_smb, input);
+				//ungetc(next_smb, input);
 				*res=1;
 				modifiers.push_back(mod);		
 				return tokens;

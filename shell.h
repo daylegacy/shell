@@ -27,7 +27,7 @@ struct shell{
         while(1){
             vector<cmd> commands;
             vector<mod> modifiers;
-            printf("$> ");
+            //printf("$> ");
             int res = parse_input(commands, modifiers);
             print_commands(commands, modifiers);
             if(commands.getsize()>0 && 
@@ -36,7 +36,6 @@ struct shell{
                     for(int k =0;k<commands[i].getsize();k++){
                         free(commands[i][k]);
                     }
-                    //free(commands[i].gp());
                 }
                 break;
             }
@@ -48,7 +47,6 @@ struct shell{
             }
             for(int i = 0; i<modifiers.getsize(); i++){
                 for(int k =0;k<modifiers[i].getsize();k++){
-                    //free((void *)modifiers[i][k]);
                 }
             }
             if (res==-1) break;
