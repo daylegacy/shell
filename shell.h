@@ -200,16 +200,8 @@ struct shell{
                             }
                         }
                         if(strcmp(commands[i][0], "cd")==0){
-                            char *buf = get_current_dir_name();
-                            char * new_path = (char *)calloc(200, sizeof(char));
-                            strcpy(new_path, buf);
-                            strcat(new_path, "/");
-                            strcat(new_path, commands[i][1]);
-                            //printf("%s\n", new_path);
-                            chdir(new_path);
+                            chdir(commands[i][1]);
                             to_execute=0;
-                            free(buf);
-                            free(new_path);
                         }
                     }
                     if(fd){ //>/>>
