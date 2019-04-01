@@ -17,12 +17,6 @@
 	do{ \
 	}while(0); 
 #endif
-// struct cmd{
-//     vector<char *> argv;
-//     cmd(vector<char *> argv){
-//         this->argv = argv;
-//     }
-// };
 
 struct shell{
     shell(){}
@@ -34,7 +28,7 @@ struct shell{
             vector<cmd> commands;
             vector<mod> modifiers;
             printf("$> ");
-            parse_input(commands, modifiers);
+            int res = parse_input(commands, modifiers);
             print_commands(commands, modifiers);
             if(commands.getsize()>0 && 
                 !strcmp(commands[0][0], "quit")){
@@ -57,6 +51,7 @@ struct shell{
                     //free((void *)modifiers[i][k]);
                 }
             }
+            if (res==-1) break;
         }
         
     }
@@ -249,13 +244,13 @@ struct shell{
         while(1){
             int res=0;
             parser parser;
-            //modifiers.push_back("");
             commands.push_back(std::move(parser.split_to_tokens(stdin, &res, modifiers)));
             if(commands[cur_command].getsize()==0) {
                 commands.pop();cur_command--;
                 modifiers.pop();
             }
             if(res==0)break;
+            if(res==-1) return -1;
             cur_command++;
         }
         return cur_command+1;

@@ -35,7 +35,14 @@ public:
 		int jmp=0;
 		int is_protected=0;
 		while (!(smb=='\n' && !is_protected && !literal1 && !literal2)) {
-			next_smb=fgetc(input);
+			next_smb=getchar();
+			if(next_smb==EOF) {
+				add_token();
+				*res=-1;
+				modifiers.push_back(mod);
+				return tokens;
+			}
+
 			assert(!(literal1 && literal2));
 			if(literal1){
 				switch (smb)
@@ -157,7 +164,7 @@ public:
 					}
 					break;
 				case '#':
-					while(fgetc(input)!='\n'){;}
+					while(getchar()!='\n'){;}
 					cmd_end=2;
 					break;
 				default:	add_smb(smb);
@@ -165,6 +172,7 @@ public:
 					break;
 				}
 			}
+			
 			if(cmd_end==2){ 
 				add_token();
 				*res=0;
@@ -186,13 +194,19 @@ public:
 			}
 			else{
 				prev_smb = next_smb;
-				smb = fgetc(input);
+				
+				smb = getchar();
+				if(smb==EOF) {
+					add_token();
+					*res=-1;
+					modifiers.push_back(mod);
+					return tokens;
+				}
 				jmp=0;
 			}
 			k++;
 		}
 		add_token();
-		//ungetc(next_smb, input);
 		modifiers.push_back(mod);
 		return tokens;
 	}
