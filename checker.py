@@ -21,8 +21,8 @@ tests = [
 [
 "mkdir testdir",
 "cd testdir",
-'pwd | tail -c 8',
-'   pwd | tail -c 8',
+"pwd | tail -c 8",
+"   pwd | tail -c 8",
 ],
 [
 "touch \"my file with whitespaces in name.txt\"",
@@ -32,10 +32,12 @@ tests = [
 "cat my\\ file\\ with\\ whitespaces\\ in\\ name.txt",
 "echo \"test\" >> \"my file with whitespaces in name.txt\"",
 "cat \"my file with whitespaces in name.txt\"",
-"echo 'truncate' > \"my file with whitespaces in name.txt\"",
+"echo \"truncate\" > \"my file with whitespaces in name.txt\"",
 "cat \"my file with whitespaces in name.txt\"",
-"echo \"test 'test'' \\\" >> \"my file with whitespaces in name.txt\"",
-"cat \"my file with whitespaces in name.txt\""
+"echo \"test ' \" >> \"my file with whitespaces in name.txt\"",
+"echo \"truncate\" >> \"my file with whitespaces in name.txt\"",
+#"echo \"test 'test'' \\\" >> \"my file with whitespaces in name.txt\"",
+#"cat \"my file with whitespaces in name.txt\""
 ],
 [
 "# Comment",

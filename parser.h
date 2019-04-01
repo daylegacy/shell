@@ -9,6 +9,7 @@
 #define	TOKEN_SIZE (50)
 #define ARRAY_SIZE (20)
 
+
 class parser {
 	vector<char*> tokens;
 	vector<char*> modifiers;
@@ -25,28 +26,59 @@ public:
 	vector<char*> &split_to_tokens(FILE * input, int*res, vector<vector<const char*>> & modifiers) {
 		vector<const char*> mod;
 		int k=0;
-		int literal=0;
+		int literal1=0;
+		int literal2=0;
 		int smb=0;
 		int next_smb = 0;
 		int prev_smb=0;
 		int cmd_end=0;
 		int jmp=0;
-		while (!(smb=='\n' && prev_smb!='\\')) {
+		int is_protected=0;
+		while (!(smb=='\n' && !is_protected && !literal1 && !literal2)) {
 			next_smb=fgetc(input);
-
-			if(literal){
+			assert(!(literal1 && literal2));
+			if(literal1){
 				switch (smb)
 				{
+				case '\n': is_protected=0;
+					break;
 				case '\"':
-					if(prev_smb!='\\'){
-						literal=0;
+					if(!is_protected){
+						literal1=0;
 						add_token();
 					}
 					else{
+						is_protected=0;
+						add_smb(smb);
+					}
+					break;
+				case '\\':
+					if(!is_protected){
+						is_protected=1;
+					}
+					else{
+						is_protected=0;
 						add_smb(smb);
 					}
 					break;
 				default:	add_smb(smb);
+					is_protected=0;
+					break;
+				}
+			}
+			else if(literal2){
+				//assert(false);
+				switch (smb)
+				{
+				case '\n': is_protected=0;
+					break;
+				case '\'':
+					literal2=0;
+					add_token();
+					is_protected=0;
+					break;
+				default:	add_smb(smb);
+					is_protected=0;
 					break;
 				}
 			}
@@ -54,21 +86,20 @@ public:
 				switch (smb)
 				{
 				case '\n': 
-					if(prev_smb!='\\'){
+					if(!is_protected){
 						add_token(); cmd_end=2; //end of command
 					}
+					is_protected=0;
 					break;
 				case ' ':
-					if(prev_smb!='\\'){
+					if(!is_protected){
 						add_token();
 					}
 					else{
 						add_smb(smb);
 					}
+					is_protected=0;
 					break;
-				// case '&':	add_token(); add_smb('&');
-				// 	if (next_smb == '&')		{ add_smb('&');jmp=1;}
-				// 	add_token(); break;
 				case '&':	add_token();
 					if (next_smb == '&'){
 						mod.push_back("&&");
@@ -78,6 +109,7 @@ public:
 						mod.push_back("&");
 						cmd_end=1;
 					}
+					is_protected=0;
 					break;	
 				case '|':	add_token();
 					if (next_smb == '|'){
@@ -89,24 +121,47 @@ public:
 						mod.push_back("|");
 						cmd_end=1;
 					}
+					is_protected=0;
 					break;
 				case '>':	add_token(); add_smb('>');
 					if (next_smb == '>')		{ add_smb('>'); jmp=1;}
-					add_token(); break;	
+					add_token(); is_protected=0;break;	
 				case '<':	add_token(); add_smb('<');
 					if (next_smb == '<')		{ add_smb('<'); jmp=1;}
-					add_token(); break;
+					add_token(); is_protected=0;break;
 				case '\"':
-					if(prev_smb!='\\'){
-						literal=1;add_token();
+					if(!is_protected){
+						literal1=1;add_token();
 					}
 					else{
 						add_smb(smb);
 					}
+					is_protected=0;
+					break;
+				case '\'':
+					if(!is_protected){
+						literal2=1;add_token();
+					}
+					else{is_protected=0;
+						add_smb(smb);
+					}
+					is_protected=0;
 					break;
 				case '\\':
+					if(!is_protected){
+						is_protected=1;
+					}
+					else{
+						add_smb(smb);
+						is_protected=0;
+					}
+					break;
+				case '#':
+					while(fgetc(input)!='\n'){;}
+					cmd_end=2;
 					break;
 				default:	add_smb(smb);
+					is_protected=0;
 					break;
 				}
 			}
@@ -134,10 +189,6 @@ public:
 				smb = fgetc(input);
 				jmp=0;
 			}
-			//printf("k=%d smb=%c int=%d\n", k, smb, smb);
-			//if(smb==EOF)printf("pisdets\n");
-			
-			//printf("k=%d next_smb=%c int=%d\n", k, next_smb, next_smb);
 			k++;
 		}
 		add_token();
@@ -166,4 +217,143 @@ public:
 
 };
 
+
 #endif // !SQL_PARSER_H
+
+
+
+
+// while (!(smb=='\n' && (prev_smb!='\\' && !literal1 && !literal2))) {
+// 			next_smb=fgetc(input);
+// 			if(literal1){
+// 				switch (smb)
+// 				{
+// 				case '\n': 
+// 					break;
+// 				case '\"':
+// 					if(prev_smb!='\\'){
+// 						literal1=0;
+// 						add_token();
+// 					}
+// 					else{
+// 						add_smb(smb);
+// 					}
+// 					break;
+// 				default:	add_smb(smb);
+// 					break;
+// 				}
+// 			}
+// 			else if(literal2){
+// 				switch (smb)
+// 				{
+// 				case '\n': 
+// 					break;
+// 				case '\'':
+// 					if(prev_smb!='\\'){
+// 						literal2=0;
+// 						add_token();
+// 					}
+// 					else{
+// 						add_smb(smb);
+// 					}
+// 					break;
+// 				default:	add_smb(smb);
+// 					break;
+// 				}
+// 			}
+// 			else{
+// 				switch (smb)
+// 				{
+// 				case '\n': 
+// 					if(prev_smb!='\\'){
+// 						add_token(); cmd_end=2; //end of command
+// 					}
+// 					break;
+// 				case ' ':
+// 					if(prev_smb!='\\'){
+// 						add_token();
+// 					}
+// 					else{
+// 						add_smb(smb);
+// 					}
+// 					break;
+// 				case '&':	add_token();
+// 					if (next_smb == '&'){
+// 						mod.push_back("&&");
+// 						cmd_end=1;
+// 					}
+// 					else{
+// 						mod.push_back("&");
+// 						cmd_end=1;
+// 					}
+// 					break;	
+// 				case '|':	add_token();
+// 					if (next_smb == '|'){
+// 						cmd_end=1;
+// 						mod.push_back("||");
+// 						//add_smb('|');add_smb('|');add_token();jmp=1;
+// 					}
+// 					else{
+// 						mod.push_back("|");
+// 						cmd_end=1;
+// 					}
+// 					break;
+// 				case '>':	add_token(); add_smb('>');
+// 					if (next_smb == '>')		{ add_smb('>'); jmp=1;}
+// 					add_token(); break;	
+// 				case '<':	add_token(); add_smb('<');
+// 					if (next_smb == '<')		{ add_smb('<'); jmp=1;}
+// 					add_token(); break;
+// 				case '\"':
+// 					if(prev_smb!='\\'){
+// 						literal1=1;add_token();
+// 					}
+// 					else{
+// 						add_smb(smb);
+// 					}
+// 					break;
+// 				case '\'':
+// 					if(prev_smb!='\\'){
+// 						literal2=1;add_token();
+// 					}
+// 					else{
+// 						add_smb(smb);
+// 					}
+// 					break;
+// 				case '\\':
+// 					break;
+// 				default:	add_smb(smb);
+// 					break;
+// 				}
+// 			}
+// 			if(cmd_end==2){ 
+// 				add_token();
+// 				*res=0;
+				
+// 				modifiers.push_back(mod);
+// 				return tokens;
+// 			}
+// 			if(cmd_end==1){ 
+// 				add_token();
+// 				ungetc(next_smb, input);
+// 				*res=1;
+// 				modifiers.push_back(mod);		
+// 				return tokens;
+// 			}
+			
+// 			if(!jmp){
+// 				prev_smb = smb;
+// 				smb = next_smb;
+// 			}
+// 			else{
+// 				prev_smb = next_smb;
+// 				smb = fgetc(input);
+// 				jmp=0;
+// 			}
+// 			k++;
+// 		}
+// 		add_token();
+// 		//ungetc(next_smb, input);
+// 		modifiers.push_back(mod);
+// 		return tokens;
+// 	}
