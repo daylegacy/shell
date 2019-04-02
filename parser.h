@@ -5,26 +5,26 @@
 #include <cassert>
 #include <cstdio>
 #include <memory>
-#include "vector.h"
+#include <vector>
 #define	TOKEN_SIZE (50)
 #define ARRAY_SIZE (20)
 
 
 class parser {
-	vector<char*> tokens;
-	vector<char*> modifiers;
-	vector<char> cur_token;
+	std::vector<char*> tokens;
+	std::vector<char*> modifiers;
+	std::vector<char> cur_token;
 public:
 	parser(){
 	}
 	~parser(){}
-	explicit parser(vector<char *>* array) {
-		tokens = *array;
+	explicit parser(std::vector<char *>* array) {
+		//tokens = *array;
 		nullify_token();
 		nullify_tokens();
 	}
-	vector<char*> &split_to_tokens(FILE * input, int*res, vector<vector<const char*>> & modifiers) {
-		vector<const char*> mod;
+	std::vector<char*> &split_to_tokens(FILE * input, int*res, std::vector<std::vector<const char*>> & modifiers) {
+		std::vector<const char*> mod;
 		int k=0;
 		int literal1=0;
 		int literal2=0;
@@ -216,9 +216,9 @@ public:
 	
 	void add_token() {
 		cur_token.push_back('\0');
-		if (cur_token.gp() && cur_token[0]!=0) {
-			char * new_token = (char *)malloc(sizeof(char)*(strlen(cur_token.gp())+1));
-			strcpy(new_token, cur_token.gp());
+		if (cur_token.data() && cur_token[0]!=0) {
+			char * new_token = (char *)malloc(sizeof(char)*(strlen(cur_token.data())+1));
+			strcpy(new_token, cur_token.data());
 			tokens.push_back((new_token));
 		}
 		nullify_token();
@@ -228,7 +228,7 @@ public:
 		cur_token.push_back(c);
 	}
 	void nullify_token() {
-		cur_token.setsize(0);
+		cur_token.resize(0);
 	}
 	void nullify_tokens() {}
 
